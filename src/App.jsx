@@ -97,11 +97,15 @@ const ALL_BREEDS = Object.keys(BREED_DATA);
 
 // ─── CLAUDE VISION API ───────────────────────────────────────────────────────
 async function analyseWithClaude(base64Image, mediaType) {
+  if (!base64Image) {
+    throw new Error("No image data provided for prediction.");
+  }
+
   const breedList = ALL_BREEDS.join(", ");
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    throw new Error("Missing VITE_ANTHROPIC_API_KEY in .env");
+    throw new Error("Missing VITE_ANTHROPIC_API_KEY in .env or deployment environment. Add it and rebuild the app.");
   }
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -145,10 +149,20 @@ The top3 array must have the predicted breed first with the highest confidence. 
     }),
   });
 
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Prediction API error (${response.status}): ${errorText}`);
+  }
+
   const data = await response.json();
   const text = data.content?.map(c => c.text || "").join("") || "";
   const clean = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
+
+  try {
+    return JSON.parse(clean);
+  } catch (err) {
+    throw new Error(`Failed to parse prediction response: ${clean}`);
+  }
 }
 
 function toBase64(file) {
@@ -444,6 +458,11 @@ function UploadPage({ onPredict, notify }) {
   };
 
   const predict = async () => {
+    if (!file) {
+      notify("Please upload an image before predicting.", "error");
+      return;
+    }
+
     setLoading(true);
     setResult(null);
     setInvalidMsg(null);
@@ -469,7 +488,8 @@ function UploadPage({ onPredict, notify }) {
       onPredict(prediction);
       notify(`Identified: ${res.breed} (${res.confidence}% confidence)`);
     } catch (e) {
-      notify("Prediction failed — please try again", "error");
+      console.error(e);
+      notify(e.message || "Prediction failed — please try again", "error");
     }
     setLoading(false);
   };

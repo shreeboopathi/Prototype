@@ -22,9 +22,27 @@ This is a Vite + React app that can be deployed as a public website.
    - Framework Preset: `Vite`
    - Build Command: `npm run build`
    - Output Directory: `dist`
-4. Add your environment variable in Vercel if your app uses the Anthropic API:
+4. Add your environment variable in Vercel:
    - `VITE_ANTHROPIC_API_KEY`
 5. Deploy and Vercel will give you a permanent public URL.
+
+## Local environment setup
+
+1. Create a `.env` file from `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Add your Anthropics API key to `.env`.
+3. Run locally with:
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+## Important
+
+- GitHub Pages cannot safely store a secret API key for the Anthropic API.
+- For working image predictions, use Vercel or local deployment with `VITE_ANTHROPIC_API_KEY` set.
 
 ## Deploy with Vercel CLI
 
