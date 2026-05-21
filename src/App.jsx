@@ -96,73 +96,24 @@ const BREED_DATA = {
 const ALL_BREEDS = Object.keys(BREED_DATA);
 
 // ─── CLAUDE VISION API ───────────────────────────────────────────────────────
+// Frontend: call serverless API which keeps the Anthropic API key secret.
+// This endpoint is provided by a server-side function (e.g. Vercel serverless).
 async function analyseWithClaude(base64Image, mediaType) {
-  if (!base64Image) {
-    throw new Error("No image data provided for prediction.");
-  }
+  if (!base64Image) throw new Error("No image data provided for prediction.");
 
-  const breedList = ALL_BREEDS.join(", ");
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("Missing VITE_ANTHROPIC_API_KEY in .env or deployment environment. Add it and rebuild the app.");
-  }
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const resp = await fetch("/api/predict", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      messages: [{
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mediaType, data: base64Image },
-          },
-          {
-            type: "text",
-            text: `You are an expert Indian cattle and buffalo breed identification system.
-
-First, carefully examine this image.
-
-Step 1 — Validate: Does this image contain a cow (cattle) or buffalo? 
-- If it contains a human, blank/solid color, landscape, object, other animal, or anything that is NOT a cow or buffalo, respond ONLY with this JSON:
-{"valid": false, "reason": "brief description of what you actually see"}
-
-Step 2 — If it IS a cow or buffalo, identify the breed from this list ONLY:
-${breedList}
-
-If it is a cow/buffalo but the breed cannot be confidently matched to the list, still pick the closest match.
-
-Respond ONLY with valid JSON, no markdown, no explanation:
-{"valid": true, "animal_type": "Cattle" or "Buffalo", "breed": "breed name from list", "confidence": number between 60 and 97, "top3": [{"breed":"...", "confidence": number}, {"breed":"...", "confidence": number}, {"breed":"...", "confidence": number}]}
-
-The top3 array must have the predicted breed first with the highest confidence. All three must be from the breed list.`,
-          },
-        ],
-      }],
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image: base64Image, mediaType }),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Prediction API error (${response.status}): ${errorText}`);
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error(`Prediction server error (${resp.status}): ${txt}`);
   }
 
-  const data = await response.json();
-  const text = data.content?.map(c => c.text || "").join("") || "";
-  const clean = text.replace(/```json|```/g, "").trim();
-
-  try {
-    return JSON.parse(clean);
-  } catch (err) {
-    throw new Error(`Failed to parse prediction response: ${clean}`);
-  }
+  const json = await resp.json();
+  return json;
 }
 
 function toBase64(file) {

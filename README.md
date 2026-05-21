@@ -43,6 +43,18 @@ This is a Vite + React app that can be deployed as a public website.
 
 - GitHub Pages cannot safely store a secret API key for the Anthropic API.
 - For working image predictions, use Vercel or local deployment with `VITE_ANTHROPIC_API_KEY` set.
+ - For working image predictions, use Vercel (recommended) or local deployment.
+
+Serverless API (recommended)
+
+1. This project includes a serverless API at `api/predict.js` for Vercel. It keeps your Anthropic API key secret on the server.
+2. On Vercel set an environment variable named `ANTHROPIC_API_KEY` (do NOT use the `VITE_` prefix for server vars).
+3. Deploy the repo to Vercel. The frontend will call `/api/predict` and the API will forward the image to Anthropic.
+
+Local testing
+
+1. For local testing you can create a `.env` from `.env.example` and add `VITE_ANTHROPIC_API_KEY` (used only if you run without the serverless API).
+2. To use the serverless function locally use Vercel CLI (`vercel dev`) and set `ANTHROPIC_API_KEY` in the environment.
 
 ## Deploy with Vercel CLI
 
